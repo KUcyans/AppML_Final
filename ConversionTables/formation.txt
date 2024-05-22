@@ -1,0 +1,7 @@
+standard 0
+shotgun 1
+punt 2
+field goal 3
+run 4
+kick 5
+pass 6

@@ -1,0 +1,11 @@
+kickoff 0
+pass 1
+penalty 2
+field goal 3
+rush 4
+punt 5
+xp 6
+spike 7
+kneel 8
+aborted 9
+two-point 10
