@@ -3,3 +3,4 @@
 /.DS_Store
 /NFLSavant
 *.zip
+*.ipynb_checkpoints
