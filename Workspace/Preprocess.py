@@ -76,3 +76,19 @@ def runPreprocess(df, exclude, idk):
     df_process, conversionTables = numericalize(df_process)
     makeConversionTablesIntoFile(conversionTables)
     return df_process
+
+def getStringValue(feature, value):
+    conversion_table = {}
+    dirPath = '../ConversionTables/'
+    file_path = f'{dirPath}{feature}.txt'
+    
+    with open(file_path, 'r') as file:
+        for line in file:
+            parts = line.strip().split()
+            if len(parts) >= 2:
+                category = ' '.join(parts[:-1])
+                code = parts[-1]
+                conversion_table[int(code)] = category
+    return conversion_table.get(value, "Unknown")
+    
+

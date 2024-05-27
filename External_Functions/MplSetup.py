@@ -1,4 +1,7 @@
 import matplotlib.pyplot as plt
+# from matplotlib.colors import ListedColormap
+# import matplotlib.ticker as ticker
+# import matplotlib as mpl
 
 COLOUR = ['#1E90FF', # 0 # Dodgerblue
           '#FFBF00', # 1 # Amber
