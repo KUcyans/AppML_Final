@@ -1,0 +1,12 @@
+Results for playType:
+  Cross-validation scores: [0.80457499 0.80728069 0.80660283 0.80676367 0.80533215]
+  Average accuracy: 0.8061
+  Best parameters:
+    colsample_bytree: 0.7
+    learning_rate: 0.0647892507277233
+    max_depth: 9
+    n_estimators: 144
+    subsample: 1.0
+  Accuracies: [0.8046381773582955, 0.8075794045163922, 0.8070394135928354, 0.8077000407865484, 0.8056653415749443]
+  Best accuracy: 0.8077
+
