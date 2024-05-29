@@ -136,16 +136,10 @@ def saveResult(results, target_name, dirPath, fraStr):
             f.write(f"  Best accuracy: {value['best_accuracy']:.4f}\n")
             f.write("\n")
 
-
-def saveClassifications(X_test, y_test, y_pred, y_pred_proba, target_name, dirPath, fraStr):
+def saveClassifications(df, target_name, dirPath, fraStr):
     os.makedirs(dirPath, exist_ok=True)
-    classification_df = pd.DataFrame({
-        'X_test': X_test.index,
-        'y_test': y_test,
-        'y_pred': y_pred,
-        'y_pred_proba': y_pred_proba
-    })
-    classification_df.to_csv(os.path.join(dirPath, f'{target_name}_classification_{fraStr}.csv'), index=False)
+    file_path = os.path.join(dirPath, f'{target_name}_classification_{fraStr}.csv')
+    df.to_csv(file_path, index=False)
 
 
 def convertFractionIntoString(fraction):
@@ -160,7 +154,7 @@ def runPlayTypeClassification(df, fraction, n_splits):
     if fraction == 1.0:
         df_sampled = df
     else:
-        analysisSampleSize = int(df.shape[0]*fraction)
+        analysisSampleSize = int(df.shape[0] * fraction)
         df_sampled = df.sample(n=analysisSampleSize, random_state=17)
     
     X = getCircumstance(df_sampled)
@@ -181,6 +175,8 @@ def runPlayTypeClassification(df, fraction, n_splits):
         
         accuracies = []
         best_params = None
+        all_classifications = []
+        
         for train_index, test_index in kf.split(X):
             X_train, X_test = X.iloc[train_index], X.iloc[test_index]
             y_train, y_test = y.iloc[train_index], y.iloc[test_index]
@@ -199,8 +195,17 @@ def runPlayTypeClassification(df, fraction, n_splits):
             plotNormalizedConfusionMatrix(y_test, y_pred, target, dirPath, fraStr)
             saveClassificationReport(y_test, y_pred, target, dirPath, fraStr)
             
-            if accuracy == max(accuracies):
-                saveClassifications(X_test, y_test, y_pred, y_pred_proba, target, dirPath, fraStr)
+            # Collect results
+            all_classifications.append(pd.DataFrame({
+                'X_test': X_test.index,
+                'y_test': y_test,
+                'y_pred': y_pred,
+                'y_pred_proba': y_pred_proba
+            }))
+        
+        # Combine all classifications into a single DataFrame
+        combined_classifications = pd.concat(all_classifications, axis=0)
+        saveClassifications(combined_classifications, target, dirPath, fraStr)
         
         results = {}
         results[target] = {
