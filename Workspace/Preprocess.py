@@ -92,3 +92,64 @@ def getStringValue(feature, value):
     return conversion_table.get(value, "Unknown")
     
 
+indices = ['playId', 'gameId']
+
+playCircumstance = ['playSequence', 
+                'quarter', 
+                'possessionTeamId',
+                'nonpossessionTeamId', 
+                'playNumberByTeam',
+                'gameClock', 
+                'down', 
+                'distance',
+                'distanceToGoalPre',
+                'netYards',
+                'scorePossession',
+                'scoreNonpossession',
+                'fieldGoalProbability',]
+
+# classification
+playType = ['playType'
+            'huddle',
+            'formation']
+
+playResult = ['playType2', # only second item
+                'gameClockSecondsExpired',
+              'gameClockStoppedAfterPlay', 
+               'noPlay', # is the play a penalty
+               'offensiveYards']
+
+playSubsequence = ['isClockRunning', 
+                        'changePossession', 
+                        'turnover',
+                        'safety',
+                        'firstDown',]
+
+idk = [ 'typeOfPlay',
+        'fourthDownConversion',
+        'thirdDownConversion',
+        'homeScorePre', 
+        'visitingScorePre',
+        'homeScorePost',
+        'visitingScorePost',
+        'distanceToGoalPost']
+
+# the original dataset has 3 columns of their own prediction of the play we may be able to use them as a reference
+reference = ['evPre',
+             'evPost', 
+             'evPlay',]
+
+exclude = [ 'playTypeDetailed', # redundant to playType2
+            'fieldPosition', 
+            'playDescription',
+            'playStats',
+            'playDescriptionFull', 
+            'efficientPlay']
+
+def getCircumstance(df):
+    return df[playCircumstance]
+def getPlayType(df):
+    return df[playType]
+def getPlayResult(df):
+    return df[playResult]
+

@@ -1,27 +1,3 @@
-Results for playType:
-  Cross-validation scores: [0.80457499 0.80728069 0.80660283 0.80676367 0.80533215]
-  Average accuracy: 0.8061
-  Best parameters:
-    colsample_bytree: 0.7
-    learning_rate: 0.0647892507277233
-    max_depth: 9
-    n_estimators: 144
-    subsample: 1.0
-  Accuracies: [0.8046381773582955, 0.8075794045163922, 0.8070394135928354, 0.8077000407865484, 0.8056653415749443]
-  Best accuracy: 0.8077
-
-Results for huddle:
-  Cross-validation scores: [0.94427179 0.94466816 0.94466816 0.94504731 0.94552379]
-  Average accuracy: 0.9448
-  Best parameters:
-    colsample_bytree: 0.780646702755218
-    learning_rate: 0.01
-    max_depth: 10
-    n_estimators: 100
-    subsample: 0.7094326763632633
-  Accuracies: [0.9440477489846447, 0.9445934844924947, 0.944346467367889, 0.9449036920443252, 0.9451848617845079]
-  Best accuracy: 0.9452
-
 Results for formation:
   Cross-validation scores: [0.75734876 0.75664218 0.7574694  0.75833108 0.75878926]
   Average accuracy: 0.7577
