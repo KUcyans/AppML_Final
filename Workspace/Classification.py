@@ -17,11 +17,11 @@ from tqdm import tqdm
 import Preprocess as pp
 
 def XGBClassifierCore(X_train, X_test, y_train, y_test, best_params):
-    clf = xgb.XGBClassifier(objective='binary:logistic', seed=11, **best_params)
+    clf = xgb.XGBClassifier(objective='multi:softprob', num_class=11, seed=11, **best_params)
     clf.fit(X_train, y_train)
     
     y_pred = clf.predict(X_test)
-    y_pred_proba = clf.predict_proba(X_test)[:, 1]
+    y_pred_proba = clf.predict_proba(X_test)
     accuracy = accuracy_score(y_test, y_pred)
     
     return y_pred, y_pred_proba, clf, accuracy
@@ -158,70 +158,56 @@ def runPlayTypeClassification(df, fraction, n_splits):
         analysisSampleSize = int(df.shape[0] * fraction)
         df_sampled = df.sample(n=analysisSampleSize, random_state=17)
     
-    X = pp.getCircumstance(df_sampled)
-    # targets = ['playType', 'huddle', 'formation']
-    targets = pp.getColumns('playType')
+    X = getCircumstance(df_sampled)
+    target = 'playType'
     
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=97)
     
-    for target in tqdm(targets, desc="Processing Targets"):
-        logging.info(f"------- Processing {target}... -------")
-        y = df_sampled[target]
-        
-        model = xgb.XGBClassifier(objective='multi:softprob', seed=43)
-        scores = cross_val_score(model, X, y, cv=kf, scoring='accuracy', n_jobs=-1)
-        
-        avg_accuracy = scores.mean()
-        logging.info(f"{target} Cross-validation scores: {scores}")
-        logging.info(f"{target} Average cross-validation accuracy: {avg_accuracy}")
-        
-        accuracies = []
-        best_params = None
-        all_classifications = []
-        
-        for train_index, test_index in kf.split(X):
-            X_train, X_test = X.iloc[train_index], X.iloc[test_index]
-            y_train, y_test = y.iloc[train_index], y.iloc[test_index]
-            
-            best_params = runBayesianOptimization(X_train, y_train)
-            
-            y_pred, y_pred_proba, best_clf, accuracy = XGBClassifierCore(X_train, X_test, y_train, y_test, best_params)
-            
-            accuracies.append(accuracy)
-
-            fraStr = convertFractionIntoString(fraction)
-            
-            # classification specific plots and reports
-            runShap(best_clf, X_train, X_test, target, dirPath, fraStr)
-            plotConfusionMatrix(y_test, y_pred, target, dirPath, fraStr)
-            plotNormalizedConfusionMatrix(y_test, y_pred, target, dirPath, fraStr)
-            saveClassificationReport(y_test, y_pred, target, dirPath, fraStr)
-            
-            # Collect results
-            all_classifications.append(pd.DataFrame({
-                'X_test': X_test.index,
-                'y_test': y_test,
-                'y_pred': y_pred,
-                'y_pred_proba': y_pred_proba
-            }))
-        
-        # Combine all classifications into a single DataFrame
-        combined_classifications = pd.concat(all_classifications, axis=0)
-        saveClassifications(combined_classifications, target, dirPath, fraStr)
-        
-        results = {}
-        results[target] = {
-            'cross_val_scores': scores,
-            'avg_accuracy': avg_accuracy,
-            'best_params': best_params,
-            'accuracies': accuracies,
-            'best_accuracy': max(accuracies),
-        }
-        logging.info(f"{target} Average Classification Accuracy: {avg_accuracy}")
-        logging.info(f"Best Parameters for {target}: {best_params}")
+    logging.info(f"------- Processing {target}... -------")
+    y = df_sampled[target]
     
-        saveResult(results, target, dirPath, fraStr)
-
+    model = xgb.XGBClassifier(objective='multi:softprob', num_class=11, seed=43)
+    scores = cross_val_score(model, X, y, cv=kf, scoring='accuracy', n_jobs=-1)
+    
+    avg_accuracy = scores.mean()
+    logging.info(f"{target} Cross-validation scores: {scores}")
+    logging.info(f"{target} Average cross-validation accuracy: {avg_accuracy}")
+    
+    accuracies = []
+    best_params = None
+    for train_index, test_index in kf.split(X):
+        X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+        
+        best_params = runBayesianOptimization(X_train, y_train)
+        
+        y_pred, y_pred_proba, best_clf, accuracy = XGBClassifierCore(X_train, X_test, y_train, y_test, best_params)
+        
+        accuracies.append(accuracy)
+        
+        fraStr = convertFractionIntoString(fraction)
+        
+        # classification specific plots and reports
+        runShap(best_clf, X_train, X_test, target, dirPath, fraStr)
+        plotConfusionMatrix(y_test, y_pred, target, dirPath, fraStr)
+        plotNormalizedConfusionMatrix(y_test, y_pred, target, dirPath, fraStr)
+        saveClassificationReport(y_test, y_pred, target, dirPath, fraStr)
+        
+        if accuracy == max(accuracies):
+            saveClassifications(X_test, y_test, y_pred, y_pred_proba, target, dirPath, fraStr)
+    
+    results = {}
+    results[target] = {
+        'cross_val_scores': scores,
+        'avg_accuracy': avg_accuracy,
+        'best_params': best_params,
+        'accuracies': accuracies,
+        'best_accuracy': max(accuracies),
+    }
+    logging.info(f"{target} Average Classification Accuracy: {avg_accuracy}")
+    logging.info(f"Best Parameters for {target}: {best_params}")
+    
+    saveResult(results, target, dirPath, fraStr)
 
 def loadResult(directory, target_name, fraction):
     def printResult(results):

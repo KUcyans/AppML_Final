@@ -90,30 +90,30 @@ def getStringValue(feature, value):
                 code = parts[-1]
                 conversion_table[int(code)] = category
     return conversion_table.get(value, "Unknown")
-    
+
 
 indices = ['playId', 'gameId']
 
 playCircumstance = ['playSequence', 
-                'quarter', 
-                'possessionTeamId',
-                'nonpossessionTeamId', 
-                'playNumberByTeam',
-                'gameClock', 
-                'down', 
-                'distance',
-                'distanceToGoalPre',
-                'netYards',
-                'scorePossession',
-                'scoreNonpossession',
-                'fieldGoalProbability',]
+                    'quarter', 
+                    'possessionTeamId',
+                    'nonpossessionTeamId', 
+                    'playNumberByTeam',
+                    'gameClock', 
+                    'down', 
+                    'distance',
+                    'distanceToGoalPre',
+                    'netYards',
+                    'scorePossession',
+                    'scoreNonpossession',
+                    'fieldGoalProbability',]
 
 # classification
-playType = ['playType'
+playType = ['playType',
             'huddle',
             'formation']
 
-playResult = ['playType2', # only second item
+playResult = ['playResult', # the second item of playType2
                 'gameClockSecondsExpired',
               'gameClockStoppedAfterPlay', 
                'noPlay', # is the play a penalty
@@ -147,12 +147,13 @@ exclude = [ 'playTypeDetailed', # redundant to playType2
             'efficientPlay']
 
 def getColumns(key):
+    gameId = ['gameId']
     if key == 'playCircumstance':
-        return playCircumstance
+        return gameId + playCircumstance
     elif key == 'playType':
-        return playType
+        return gameId + playType
     elif key == 'playResult':
-        return playResult
+        return gameId + playResult
     elif key == 'playSubsequence':
         return playSubsequence
     elif key == 'idk':
@@ -165,13 +166,12 @@ def getColumns(key):
         return []
 
 def getCircumstance(df):
-    return df[playCircumstance]
+    return df[getColumns('playCircumstance')]
 def getPlayType(df):
-    return df[playType]
+    return df[getColumns('playType')]
 def getPlayResult(df):
-    return df[playResult]
+    return df[getColumns('playResult')]
 
 def getSplittedList(df):
-    unique_values = df['gameId'].unique()
-    split_list = [df[df['gameId'] == value] for value in unique_values]
+    split_list = [df[df['gameId'] == value] for value in df['gameId'].unique()]
     return split_list

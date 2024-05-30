@@ -1,7 +1,5 @@
 import matplotlib.pyplot as plt
-# from matplotlib.colors import ListedColormap
-# import matplotlib.ticker as ticker
-# import matplotlib as mpl
+import numpy as np
 
 COLOUR = ['#1E90FF', # 0 # Dodgerblue
           '#FFBF00', # 1 # Amber
@@ -67,3 +65,19 @@ def setMplParam(classNum):
     plt.rcParams['ytick.major.width'] = 3
     plt.rcParams['ytick.minor.size'] = 2
     plt.rcParams['ytick.minor.width'] = 2
+
+def getHistoParam(data, isDensity = False):
+    Nbins = int(np.sqrt(data.shape[0]/2))
+    counts, x_edges = np.histogram(data, bins=Nbins, density=isDensity)
+    binwidth = x_edges[1] - x_edges[0]
+    x_centres = x_edges[:-1] + binwidth/2
+    return Nbins, binwidth, counts, x_centres
+
+def getHistoParamWithBinWidth(data, binwidth, isDensity = False):
+    start_bin = np.floor(data.min()) - 0.5 * binwidth
+    end_bin = np.ceil(data.max()) + 0.5 * binwidth
+    bins = np.arange(start_bin, end_bin + binwidth, binwidth)
+    bin_centers = (bins[:-1] + bins[1:]) / 2
+    counts, x_edges = np.histogram(data, bins=bins, density=isDensity)
+    x_centres = x_edges[:-1] + binwidth/2
+    return bins, counts, bin_centers, x_centres
