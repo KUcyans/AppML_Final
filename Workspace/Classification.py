@@ -1,11 +1,10 @@
-
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
 import xgboost as xgb
 from sklearn.metrics import confusion_matrix, accuracy_score, ConfusionMatrixDisplay, classification_report
-from sklearn.model_selection import train_test_split, KFold, cross_val_score
+from sklearn.model_selection import KFold, cross_val_score
 
 from bayes_opt import BayesianOptimization
 from skopt import BayesSearchCV
@@ -15,7 +14,7 @@ import shap
 import os
 from tqdm import tqdm
 
-from Preprocess import getStringValue, getCircumstance, getPlayType, getPlayResult
+import Preprocess as pp
 
 def XGBClassifierCore(X_train, X_test, y_train, y_test, best_params):
     clf = xgb.XGBClassifier(objective='binary:logistic', seed=11, **best_params)
@@ -76,7 +75,7 @@ def runShap(model, X_train, X_test, target_name, dirPath, fraStr):
     feature_names = np.array(feature_names)
 
     for class_idx in range(num_classes):
-        class_name = getStringValue(target_name, class_idx)
+        class_name = pp.getStringValue(target_name, class_idx)
         file_name = f'[Shap]{target_name}_{class_name}_bar_{fraStr}.png'
         
         shap.summary_plot(shap_values[class_idx], X_test, plot_type="bar", show=False, feature_names=feature_names)
@@ -135,6 +134,9 @@ def saveResult(results, target_name, dirPath, fraStr):
             f.write(f"  Accuracies: {value['accuracies']}\n")
             f.write(f"  Best accuracy: {value['best_accuracy']:.4f}\n")
             f.write("\n")
+def getBestHyperParameters(target_name, fraStr):
+    dirPath = '../PlayTypeClassification/Classification/HyperParams/'
+    file_path = os.path.join(dirPath, f'params_{target_name}_{fraStr}.txt')
 
 def saveClassifications(df, target_name, dirPath, fraStr):
     os.makedirs(dirPath, exist_ok=True)
@@ -144,7 +146,6 @@ def saveClassifications(df, target_name, dirPath, fraStr):
 
 def convertFractionIntoString(fraction):
     return f"{fraction:.2f}".replace('.', '').zfill(3) # with three digits
-
 
 def runPlayTypeClassification(df, fraction, n_splits):
     dirPath = '../PlayTypeClassification/Classification/'
@@ -157,8 +158,9 @@ def runPlayTypeClassification(df, fraction, n_splits):
         analysisSampleSize = int(df.shape[0] * fraction)
         df_sampled = df.sample(n=analysisSampleSize, random_state=17)
     
-    X = getCircumstance(df_sampled)
-    targets = ['playType', 'huddle', 'formation']
+    X = pp.getCircumstance(df_sampled)
+    # targets = ['playType', 'huddle', 'formation']
+    targets = pp.getColumns('playType')
     
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=97)
     

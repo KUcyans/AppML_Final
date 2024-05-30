@@ -146,6 +146,24 @@ exclude = [ 'playTypeDetailed', # redundant to playType2
             'playDescriptionFull', 
             'efficientPlay']
 
+def getColumns(key):
+    if key == 'playCircumstance':
+        return playCircumstance
+    elif key == 'playType':
+        return playType
+    elif key == 'playResult':
+        return playResult
+    elif key == 'playSubsequence':
+        return playSubsequence
+    elif key == 'idk':
+        return idk
+    elif key == 'reference':
+        return reference
+    elif key == 'exclude':
+        return exclude
+    else:
+        return []
+
 def getCircumstance(df):
     return df[playCircumstance]
 def getPlayType(df):
@@ -153,3 +171,7 @@ def getPlayType(df):
 def getPlayResult(df):
     return df[playResult]
 
+def getSplittedList(df):
+    unique_values = df['gameId'].unique()
+    split_list = [df[df['gameId'] == value] for value in unique_values]
+    return split_list

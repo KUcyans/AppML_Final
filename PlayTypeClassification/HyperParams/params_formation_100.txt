@@ -1,0 +1,5 @@
+colsample_bytree: 0.7
+learning_rate: 0.06863719495569605
+max_depth: 10
+n_estimators: 50
+subsample: 1.0
