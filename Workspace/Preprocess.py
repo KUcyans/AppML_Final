@@ -1,4 +1,5 @@
 import pandas as pd
+import random
 
 def printColumnsHasNan(df):
     print('Columns with NaN values:')
@@ -173,5 +174,18 @@ def getPlayResult(df):
     return df[getColumns('playResult')]
 
 def getSplittedList(df):
+    # split_list = [[game0], [game1], [game2], ...]
     split_list = [df[df['gameId'] == value] for value in df['gameId'].unique()]
     return split_list
+
+def separateTrainTest(splitList, test_size=0.2):
+    Ntotal = len(splitList)
+    Ntest = int(Ntotal * test_size)
+    
+    i_test = random.sample(range(Ntotal), Ntest)
+    
+    trainList = [splitList[i] for i in range(Ntotal) if i not in i_test]
+    testList = [splitList[i] for i in i_test]
+    
+    return trainList, testList
+     
