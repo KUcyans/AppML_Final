@@ -1,0 +1,40 @@
+I am planning to have a RNN model(GRU or LSTM) learn to make the model be able to predict the result from other data input.
+
+The data is from NFL games where the dataset is saved in a list game-wisely. There are 5308 games of data in total where I have a train and test splitting function to separate the 5308 game data into two groups. 
+
+Each game data consists of a series of plays which were played during the game in order of time. 
+
+
+I preprocessed the primordial data into numerical format and grouped the columns into three groups: playCircumstance(14 columns), playType(4 columns), playResult(6 columns).
+
+As the number of the plays of each game will vary from one another, I wrote a function to pad the data using the largest number of the plays of a game which was found to bee 225.
+
+
+Here are my questions
+(1) What model do you recommend me to use?
+
+(2) What section or part of data should I teach the model with? I am guessing the model learns data of a number of games where each of them are pseudo time series, but I am not sure if the model can learn multiple time series data at once. 
+
+(3) If that is possible using LSTM, what would be the input, output and cell state? Can these aspects be related to the group of the columns I categorised before? If you would do with GRU, what would babe there update and reset?
+
+(4) For the time series-like property of the data, I would humbly guess that the data input and reference(tagged) might be the plays from the first play to the one before the last play of a game, and the plays from the second play to the last play of the game. Since, the former plays a role as input and the latter plays a role as the reference. For example, the 21st play data will be taught with respect to the 22nd play data as it is the outcome of the 21st play and so on. So the teaching may have to be play-wise. 
+
+(5)Is it possible that I give a playCircumstance set to the model, it returns me back the playType and playResult
+(6) Is the model building a classification procedure or a regression one?
+(7) (if possible) Is the prediction of (4) a classification or Regression?
+
+It would take some time to learn as the total number of the plays of 5308 games are composed of 870,384 line.
+
+These are the names of some of the functions that I already have. You may use or not use these and of course you can make your own functions, but name them in CamelCase.
+
+def buildModelCore(inputShape, hiddenUnits, Nfeatures, options):
+
+def divideInputAndTarget(sequence):
+
+def getPadded(sequence, maxNplays, padding_value=0):
+
+def runTrain(NFLplays_split, options):   NFLplays_split is the list of the all games, where a game has a series of plays.
+
+
+def separateTrainTest(splitList, test_size=0.2):
+
