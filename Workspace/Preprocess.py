@@ -148,13 +148,12 @@ exclude = [ 'playTypeDetailed', # redundant to playType2
             'efficientPlay']
 
 def getColumns(key):
-    gameId = ['gameId']
     if key == 'playCircumstance':
-        return gameId + playCircumstance
+        return playCircumstance
     elif key == 'playType':
-        return gameId + playType
+        return playType
     elif key == 'playResult':
-        return gameId + playResult
+        return playResult
     elif key == 'playSubsequence':
         return playSubsequence
     elif key == 'idk':
