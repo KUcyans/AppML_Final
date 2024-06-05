@@ -1,25 +1,26 @@
 returned 0
 complete 1
 incomplete 2
-goal, good 3
-inside 4
-outside 5
-intercepted 6
-fair catch 7
-good 8
-sacked 9
-touchback 10
-goal, no good 11
-downed 12
-goal, blocked 13
-on-side 14
-success 15
-fail 16
-scramble, outside 17
-scramble, inside 18
-muffed 19
-no good 20
-blocked 21
-scramble 22
-end around 23
-muffed catch 24
+-1 3
+goal, good 4
+inside 5
+outside 6
+intercepted 7
+fair catch 8
+good 9
+sacked 10
+touchback 11
+goal, no good 12
+downed 13
+goal, blocked 14
+on-side 15
+success 16
+fail 17
+scramble, outside 18
+scramble, inside 19
+muffed 20
+no good 21
+blocked 22
+scramble 23
+end around 24
+muffed catch 25

@@ -13,7 +13,7 @@ def printNonNumericColumns(df):
         if df[col].dtype == 'object':
             print(f'{col}')
 
-def impute(df, exclude, idk):
+def impute(df, exclude, idk, reference):
     df_process = df.copy()
     
     def removeColumns(columns):
@@ -32,13 +32,16 @@ def impute(df, exclude, idk):
     
     removeColumns(exclude)
     removeColumns(idk)
+    removeColumns(reference)
     addPlayResult_removePlayType2()
     
+    imputeColumn('playType', -1)
+    imputeColumn('playResult', -1)
     imputeColumn('distanceToGoalPre', -1)
     imputeColumn('fieldGoalProbability', -1)
     imputeColumn('huddle', 'misc')
     imputeColumn('formation', 'standard')
-    
+
     return df_process
 
 def convertGameClockToSeconds(df):
@@ -70,9 +73,9 @@ def makeConversionTablesIntoFile(conversionTables):
             for category, code in table.items():
                 file.write(f'{category} {code}\n')
 
-def runPreprocess(df, exclude, idk):
+def runPreprocess(df, exclude, idk, reference):
     df_process = df.copy()
-    df_process = impute(df_process, exclude, idk)
+    df_process = impute(df_process, exclude, idk, reference)
     df_process = convertGameClockToSeconds(df_process)
     df_process, conversionTables = numericalize(df_process)
     makeConversionTablesIntoFile(conversionTables)
@@ -95,7 +98,7 @@ def getStringValue(feature, value):
 
 indices = ['playId', 'gameId']
 
-playCircumstance = ['playSequence', 
+playCircumstances = ['playSequence', 
                     'quarter', 
                     'possessionTeamId',
                     'nonpossessionTeamId', 
@@ -109,18 +112,17 @@ playCircumstance = ['playSequence',
                     'scoreNonpossession',
                     'fieldGoalProbability',]
 
-# classification
-playType = ['playType',
+playTypes = ['playType',
             'huddle',
             'formation']
 
-playResult = ['playResult', # the second item of playType2
+playResults = ['playResult', # the second item of playType2
                 'gameClockSecondsExpired',
               'gameClockStoppedAfterPlay', 
                'noPlay', # is the play a penalty
                'offensiveYards']
 
-playSubsequence = ['isClockRunning', 
+playSubsequences = ['isClockRunning', 
                         'changePossession', 
                         'turnover',
                         'safety',
@@ -149,28 +151,32 @@ exclude = [ 'playTypeDetailed', # redundant to playType2
 
 def getColumns(key):
     if key == 'playCircumstance':
-        return playCircumstance
+        return playCircumstances
     elif key == 'playType':
-        return playType
+        return playTypes
     elif key == 'playResult':
-        return playResult
+        return playResults
     elif key == 'playSubsequence':
-        return playSubsequence
+        return playSubsequences
     elif key == 'idk':
         return idk
     elif key == 'reference':
         return reference
     elif key == 'exclude':
         return exclude
+    elif key == 'input':
+        return [item for item in playCircumstances if item != 'gameClock'] + playSubsequences
     else:
         return []
 
 def getCircumstance(df):
-    return df[getColumns('playCircumstance')]
+    return df[playCircumstances]
 def getPlayType(df):
-    return df[getColumns('playType')]
+    return df[playTypes]
 def getPlayResult(df):
-    return df[getColumns('playResult')]
+    return df[playResults]
+def getInput(df):
+    return df[getColumns('input')]
 
 def getSplittedList(df):
     # split_list = [[game0], [game1], [game2], ...]
