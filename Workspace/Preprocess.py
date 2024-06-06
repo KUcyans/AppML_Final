@@ -122,7 +122,8 @@ playResults = ['playResult', # the second item of playType2
                'noPlay', # is the play a penalty
                'offensiveYards']
 
-playSubsequences = ['isClockRunning', 
+playSubsequences = [
+    # 'isClockRunning', 
                         'changePossession', 
                         'turnover',
                         'safety',
@@ -164,19 +165,20 @@ def getColumns(key):
         return reference
     elif key == 'exclude':
         return exclude
-    elif key == 'input':
-        return [item for item in playCircumstances if item != 'gameClock'] + playSubsequences
+    elif key == 'playInput':
+        # return [item for item in playCircumstances if item != 'gameClock'] + playSubsequences
+        return playCircumstances + playSubsequences
     else:
         return []
 
-def getCircumstance(df):
+def getCircumstances(df):
     return df[playCircumstances]
-def getPlayType(df):
+def getPlayTypes(df):
     return df[playTypes]
-def getPlayResult(df):
+def getPlayResults(df):
     return df[playResults]
-def getInput(df):
-    return df[getColumns('input')]
+def getPlayInputs(df):
+    return df[getColumns('playInput')]
 
 def getSplittedList(df):
     # split_list = [[game0], [game1], [game2], ...]
