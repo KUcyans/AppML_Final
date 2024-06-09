@@ -15,6 +15,8 @@ import joblib
 import time
 from tqdm import tqdm
 from datetime import datetime
+import os
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import Preprocess as pp
 
@@ -254,7 +256,7 @@ def trainLSTM(NFLplays_split_train, activators, fileName=f"LSTM_{datetime.today(
     
     model.fit(X_train, y_train_dict, epochs=10, batch_size=Nbatch, validation_split=0.2, verbose=1)
     if isSave:
-        dirPath = '../LSTM/'
+        dirPath = '../LSTM/Models/'
         model.save(dirPath + fileName)
     return model, scalers
 
@@ -444,10 +446,41 @@ Runs predictions on a list of test games using the trained LSTM model.
 - **Returns:**
   - `myPrecious` (list): List of DataFrames containing prediction results for each test game.
 '''
-def runPrediction(model, scaler, testDataList, isDebug=False):
-    myPrecious = []
-    for i, testGame in tqdm(enumerate(testDataList), desc="Predicting test games"):
-        prediction_df, _ = predictExtendedLSTM(model, scaler, testGame, isDebug=isDebug)
-        myPrecious.append(prediction_df)
+def savePredictionCore(model, scaler, testGame, i, dirPath, isDebug):
+    prediction_df, _ = predictExtendedLSTM(model, scaler, testGame, isDebug=isDebug)
     
-    return myPrecious
+    combined_df = pd.concat(prediction_df.values(), axis=1, keys=prediction_df.keys())
+    combined_df.columns = combined_df.columns.map('_'.join)
+    combined_df.to_csv(f"{dirPath}prediction_{i}.csv", index=False)
+
+def savePrediction(model, scaler, testDataList, dirName, isDebug=False):
+    dirPath = f'../LSTM/Predictions/{dirName}/'
+    if not os.path.exists(dirPath):
+        os.makedirs(dirPath)
+    
+    with ProcessPoolExecutor() as executor:
+        futures = [
+            executor.submit(savePredictionCore, model, scaler, testGame, i, dirPath, isDebug)
+            for i, testGame in enumerate(testDataList)
+        ]
+        
+        for future in tqdm(as_completed(futures), total=len(futures), desc="Predicting test games"):
+            future.result()
+
+def loadPrediction(testDataList, dirName):
+    dirPath = f'../LSTM/Predictions/{dirName}/'
+    predictions = []
+    
+    for i in range(len(testDataList)):
+        file_path = f"{dirPath}prediction_{i}.csv"
+        if os.path.exists(file_path):
+            df = pd.read_csv(file_path)
+            prediction_df = {col.split('_')[0]: df.filter(regex=f"^{col.split('_')[0]}_") for col in df.columns}
+            for key in prediction_df:
+                prediction_df[key].columns = [col.replace(f"{key}_", "") for col in prediction_df[key].columns]
+            predictions.append(prediction_df)
+        else:
+            print(f"Warning: File {file_path} does not exist.")
+            predictions.append(None)
+    
+    return predictions
