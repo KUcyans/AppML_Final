@@ -292,54 +292,32 @@ Builds a DataFrame comparing actual and predicted values.
 - **Returns:**
   - `dfs` (dict): Dictionary of DataFrames comparing actual and predicted values.
 '''
-# def buildExtendedDF(actual_dict, predicted_dict):
-#     dfs = {}
-
-#     for feature in actual_dict.keys():
-#         actual = actual_dict[feature].astype(float)
-#         predicted = predicted_dict[feature].astype(float)
-
-#         max_length = max(len(actual), len(predicted))
-
-#         actual_padded = np.pad(actual, (0, max_length - len(actual)), constant_values=np.nan)
-#         predicted_padded = np.pad(predicted, (0, max_length - len(predicted)), constant_values=np.nan)
-
-#         df = pd.DataFrame({'Actual': actual_padded, 'Predicted': predicted_padded})
-        
-#         if feature == 'gameClockSecondsExpired':
-#             df['Cumulative_Actual'] = np.cumsum(np.nan_to_num(df['Actual']))
-#             df['Cumulative_Predicted'] = np.cumsum(np.nan_to_num(df['Predicted']))
-        
-#         dfs[feature] = df
-
-#     return dfs
-def buildExtendedDF(actual_dict, predicted_dict, circumstance_dict):
-    dfs = {}
+def buildExtendedDF(actual_dict, predicted_dict, circumstances_df):
+    combined_dfs = [circumstances_df.reset_index(drop=True)]
 
     for feature in actual_dict.keys():
-        actual = actual_dict[feature].astype(float)
-        predicted = predicted_dict[feature].astype(float)
-        circumstance = circumstance_dict[feature].astype(float)
-
+        actual = actual_dict[feature].astype(float).flatten()
+        predicted = predicted_dict[feature].astype(float).flatten()
         max_length = max(len(actual), len(predicted))
 
         actual_padded = np.pad(actual, (0, max_length - len(actual)), constant_values=np.nan)
         predicted_padded = np.pad(predicted, (0, max_length - len(predicted)), constant_values=np.nan)
-        circumstance_padded = np.pad(circumstance, (0, max_length - len(circumstance)), constant_values=np.nan)
 
         df = pd.DataFrame({
-            'Circumstance': circumstance_padded,
-            'Actual': actual_padded,
-            'Predicted': predicted_padded
+            f'{feature}_Actual': actual_padded,
+            f'{feature}_Predicted': predicted_padded
         })
-        
-        if feature == 'gameClockSecondsExpired':
-            df['Cumulative_Actual'] = np.cumsum(np.nan_to_num(df['Actual']))
-            df['Cumulative_Predicted'] = np.cumsum(np.nan_to_num(df['Predicted']))
-        
-        dfs[feature] = df
 
-    return dfs
+        if feature == 'gameClockSecondsExpired':
+            df['Cumulative_Actual'] = np.cumsum(np.nan_to_num(df[f'{feature}_Actual']))
+            df['Cumulative_Predicted'] = np.cumsum(np.nan_to_num(df[f'{feature}_Predicted']))
+        
+        combined_dfs.append(df.reset_index(drop=True))
+
+    combined_df = pd.concat(combined_dfs, axis=1)
+    return combined_df
+
+
 '''
 `predictExtendedLSTM(model, scalers, testGame, isDebug=False)`
 Makes predictions using the trained LSTM model and builds a comparison DataFrame.
@@ -352,48 +330,6 @@ Makes predictions using the trained LSTM model and builds a comparison DataFrame
   - `dfs` (dict): Dictionary of DataFrames comparing actual and predicted values.
   - `Nplays` (int): Number of plays predicted.
 '''
-# def predictExtendedLSTM(model, scalers, testGame, isDebug=False):
-#     inputSequence = np.array([pp.getCircumstances(play).values for index, play in testGame.iterrows()])
-#     inputSequence = np.expand_dims(inputSequence, axis=0)
-    
-#     if isDebug:
-#         print(f'Initial inputSequence shape: {inputSequence.shape}')
-
-#     predicted_dict = {name: [] for name in model.output_names}
-#     current_input = inputSequence
-#     accumulated_seconds = 0
-
-#     Nplays = 0
-#     while accumulated_seconds <= 3600:
-#         predictions = model.predict(current_input, verbose=0)
-        
-#         for name, pred in zip(model.output_names, predictions):
-#             if pred.shape[-1] > 1:
-#                 predicted_value = np.argmax(pred, axis=-1).flatten()[-1]
-#             else:
-#                 predicted_value = pred.flatten()[-1]
-#                 if name in scalers:
-#                     predicted_value = scalers[name].inverse_transform([[predicted_value]])[0, 0]
-#             predicted_dict[name].append(predicted_value)
-#         elapsedTime = predicted_dict['gameClockSecondsExpired'][-1]
-#         accumulated_seconds += elapsedTime
-#         if isDebug:
-#             print(f'elapsedTime: {elapsedTime}')
-
-#         new_play = np.zeros((1, 1, current_input.shape[2]))
-#         for j, name in enumerate(model.output_names):
-#             if j < current_input.shape[2]:
-#                 predicted_value = predicted_dict[name][-1]
-#                 new_play[0, 0, j] = predicted_value
-        
-#         current_input = np.concatenate([current_input[:, 1:, :], new_play], axis=1)
-#         Nplays += 1
-#     actual_dict = {name: testGame[name].values for name in model.output_names}
-
-#     predicted_dict = {name: np.array(predicted_dict[name]) for name in model.output_names}
-
-#     return buildExtendedDF(actual_dict, predicted_dict), Nplays
-
 def predictExtendedLSTM(model, scalers, testGame, isDebug=False):
     inputSequence = np.array([pp.getCircumstances(play).values for index, play in testGame.iterrows()])
     inputSequence = np.expand_dims(inputSequence, axis=0)
@@ -402,7 +338,8 @@ def predictExtendedLSTM(model, scalers, testGame, isDebug=False):
         print(f'Initial inputSequence shape: {inputSequence.shape}')
 
     predicted_dict = {name: [] for name in model.output_names}
-    circumstance_dict = {name: [] for name in model.output_names}
+    circumstances = []
+
     current_input = inputSequence
     accumulated_seconds = 0
 
@@ -418,7 +355,9 @@ def predictExtendedLSTM(model, scalers, testGame, isDebug=False):
                 if name in scalers:
                     predicted_value = scalers[name].inverse_transform([[predicted_value]])[0, 0]
             predicted_dict[name].append(predicted_value)
-            circumstance_dict[name].append(current_input[0, -1, :].flatten())
+
+        circumstances.append(current_input[0, -1, :])
+
         elapsedTime = predicted_dict['gameClockSecondsExpired'][-1]
         accumulated_seconds += elapsedTime
         if isDebug:
@@ -432,12 +371,13 @@ def predictExtendedLSTM(model, scalers, testGame, isDebug=False):
         
         current_input = np.concatenate([current_input[:, 1:, :], new_play], axis=1)
         Nplays += 1
+    
     actual_dict = {name: testGame[name].values for name in model.output_names}
 
     predicted_dict = {name: np.array(predicted_dict[name]) for name in model.output_names}
-    circumstance_dict = {name: np.array(circumstance_dict[name]) for name in model.output_names}
+    circumstances = pd.DataFrame(np.array(circumstances), columns=pp.getColumns('playCircumstance'))
 
-    return buildExtendedDF(actual_dict, predicted_dict, circumstance_dict), Nplays
+    return buildExtendedDF(actual_dict, predicted_dict, circumstances), Nplays
 
 '''
 `getActivationSummary(debugTrain, debugTest, isDebug=False)`
@@ -517,33 +457,10 @@ Runs predictions on a list of test games using the trained LSTM model.
 - **Returns:**
   - `myPrecious` (list): List of DataFrames containing prediction results for each test game.
 '''
-# def savePredictionCore(model, scaler, testGame, i, dirPath, isDebug):
-#     prediction_df, _ = predictExtendedLSTM(model, scaler, testGame, isDebug=isDebug)
-    
-#     combined_df = pd.concat(prediction_df.values(), axis=1, keys=prediction_df.keys())
-#     combined_df.columns = combined_df.columns.map('_'.join)
-#     combined_df.to_csv(f"{dirPath}prediction_{i}.csv", index=False)
-
-# def savePrediction(model, scaler, testDataList, dirName, isDebug=False):
-#     dirPath = f'../LSTM/Predictions/{dirName}/'
-#     if not os.path.exists(dirPath):
-#         os.makedirs(dirPath)
-    
-#     with ProcessPoolExecutor() as executor:
-#         futures = [
-#             executor.submit(savePredictionCore, model, scaler, testGame, i, dirPath, isDebug)
-#             for i, testGame in enumerate(testDataList)
-#         ]
-        
-#         for future in tqdm(as_completed(futures), total=len(futures), desc="Predicting test games"):
-#             future.result()
-
 def savePredictionCore(model, scaler, testGame, i, dirPath, isDebug):
     prediction_df, _ = predictExtendedLSTM(model, scaler, testGame, isDebug=isDebug)
     
-    combined_df = pd.concat(prediction_df.values(), axis=1, keys=prediction_df.keys())
-    combined_df.columns = combined_df.columns.map('_'.join)
-    combined_df.to_csv(f"{dirPath}prediction_{i}.csv", index=False)
+    prediction_df.to_csv(f"{dirPath}prediction_{i}.csv", index=False)
 
 def savePrediction(model, scaler, testDataList, dirName, isDebug=False):
     dirPath = f'../LSTM/Predictions/{dirName}/'
@@ -559,27 +476,6 @@ def savePrediction(model, scaler, testDataList, dirName, isDebug=False):
         for future in tqdm(as_completed(futures), total=len(futures), desc="Predicting test games"):
             future.result()
 
-
-
-# def loadPrediction(testDataList, dirName):
-#     dirPath = f'../LSTM/Predictions/{dirName}/'
-#     predictions = []
-    
-#     for i in range(len(testDataList)):
-#         file_path = f"{dirPath}prediction_{i}.csv"
-#         if os.path.exists(file_path):
-#             df = pd.read_csv(file_path)
-#             prediction_df = {col.split('_')[0]: df.filter(regex=f"^{col.split('_')[0]}_") for col in df.columns}
-#             for key in prediction_df:
-#                 prediction_df[key].columns = [col.replace(f"{key}_", "") for col in prediction_df[key].columns]
-#             predictions.append(prediction_df)
-#         else:
-#             print(f"Warning: File {file_path} does not exist.")
-#             predictions.append(None)
-    
-#     return predictions
-            
-
 def loadPrediction(testDataList, dirName):
     dirPath = f'../LSTM/Predictions/{dirName}/'
     predictions = []
@@ -588,10 +484,7 @@ def loadPrediction(testDataList, dirName):
         file_path = f"{dirPath}prediction_{i}.csv"
         if os.path.exists(file_path):
             df = pd.read_csv(file_path)
-            prediction_df = {col.split('_')[0]: df.filter(regex=f"^{col.split('_')[0]}_") for col in df.columns}
-            for key in prediction_df:
-                prediction_df[key].columns = [col.replace(f"{key}_", "") for col in prediction_df[key].columns]
-            predictions.append(prediction_df)
+            predictions.append(df)
         else:
             print(f"Warning: File {file_path} does not exist.")
             predictions.append(None)
