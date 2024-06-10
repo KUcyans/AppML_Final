@@ -1,4 +1,4 @@
-*.csv
+plays.csv
 *.DS_Store
 /.DS_Store
 /NFLSavant
