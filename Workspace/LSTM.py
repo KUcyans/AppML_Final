@@ -151,7 +151,6 @@ def buildLSTMCore(Nunits, Nfeatures, outputClassification, outputRegression, act
     inputs = Input(shape=(None, Nfeatures))
     x = Masking(mask_value=0)(inputs)
     x = LSTM(units=Nunits, activation=activators['LSTM'], return_sequences=True)(x)
-    # x = Dropout(0.2)(x)
 
     outputs = []
 
