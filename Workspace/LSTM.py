@@ -292,29 +292,25 @@ Builds a DataFrame comparing actual and predicted values.
 - **Returns:**
   - `dfs` (dict): Dictionary of DataFrames comparing actual and predicted values.
 '''
-def buildExtendedDF(actual_dict, predicted_dict, circumstances_df):
-    combined_dfs = [circumstances_df.reset_index(drop=True)]
+def buildExtendedDF(testGame, predicted_dict):
+    # Start with the original testGame DataFrame
+    combined_df = testGame.reset_index(drop=True)
 
-    for feature in actual_dict.keys():
-        actual = actual_dict[feature].astype(float).flatten()
-        predicted = predicted_dict[feature].astype(float).flatten()
-        max_length = max(len(actual), len(predicted))
-
-        actual_padded = np.pad(actual, (0, max_length - len(actual)), constant_values=np.nan)
+    for feature in predicted_dict.keys():
+        predicted = np.array(predicted_dict[feature]).astype(float).flatten()
+        
+        # Determine the length of the longer sequence
+        max_length = max(len(testGame), len(predicted))
+        
+        # Pad predicted to match the length of the longer sequence
         predicted_padded = np.pad(predicted, (0, max_length - len(predicted)), constant_values=np.nan)
 
-        df = pd.DataFrame({
-            f'{feature}_Actual': actual_padded,
-            f'{feature}_Predicted': predicted_padded
-        })
+        # Add the predicted values to the DataFrame
+        combined_df[f'{feature}_Predicted'] = predicted_padded
 
         if feature == 'gameClockSecondsExpired':
-            df['Cumulative_Actual'] = np.cumsum(np.nan_to_num(df[f'{feature}_Actual']))
-            df['Cumulative_Predicted'] = np.cumsum(np.nan_to_num(df[f'{feature}_Predicted']))
-        
-        combined_dfs.append(df.reset_index(drop=True))
+            combined_df['Cumulative_Predicted'] = np.cumsum(np.nan_to_num(predicted_padded))
 
-    combined_df = pd.concat(combined_dfs, axis=1)
     return combined_df
 
 
@@ -372,12 +368,10 @@ def predictExtendedLSTM(model, scalers, testGame, isDebug=False):
         current_input = np.concatenate([current_input[:, 1:, :], new_play], axis=1)
         Nplays += 1
     
-    actual_dict = {name: testGame[name].values for name in model.output_names}
-
     predicted_dict = {name: np.array(predicted_dict[name]) for name in model.output_names}
-    circumstances = pd.DataFrame(np.array(circumstances), columns=pp.getColumns('playCircumstance'))
+    extended_df = buildExtendedDF(testGame, predicted_dict)
 
-    return buildExtendedDF(actual_dict, predicted_dict, circumstances), Nplays
+    return extended_df, Nplays
 
 '''
 `getActivationSummary(debugTrain, debugTest, isDebug=False)`
@@ -459,7 +453,6 @@ Runs predictions on a list of test games using the trained LSTM model.
 '''
 def savePredictionCore(model, scaler, testGame, i, dirPath, isDebug):
     prediction_df, _ = predictExtendedLSTM(model, scaler, testGame, isDebug=isDebug)
-    
     prediction_df.to_csv(f"{dirPath}prediction_{i}.csv", index=False)
 
 def savePrediction(model, scaler, testDataList, dirName, isDebug=False):
